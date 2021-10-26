@@ -1,0 +1,116 @@
+---
+title: "Week 4 Exam"
+output: html_document
+---
+
+Load up the required packages from the library
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(here)
+library(janitor)
+library(maptools)
+library(RColorBrewer)
+library(classInt)
+library(sp)
+library(rgeos)
+library(tmap)
+library(tmaptools)
+library(sf)
+library(rgdal)
+```
+
+Read in CSV file and process the data
+
+skip = 5 indicates you skip the top 5 rows
+
+Row 6 then becomes the header, and sep creates a new cell for each value
+
+na = ".." done to remove .. cells in the dataset
+
+!CAUTION! - CSV file country names have a space in front of it which you have to remove. Otherwise, the join will not work. Use the deplyr mutate function to remove all leading and trailling spaces with the str_trim function
+
+```{r}
+GenderInequalityIndex <- read.csv(here::here("Gender_Inequality_Index.csv"), 
+                                  skip=5,
+                                  header = TRUE,
+                                  sep = ",", 
+                                  encoding = "latin1",
+                                  na = "..")
+
+GenderInequalityIndexTidy <- GenderInequalityIndex %>%
+  clean_names() %>%
+  mutate(across(where(is.character), str_trim))
+```
+
+After doing these, you now can create a new column looking at difference in inequality between 2019 and 2010. Whilst doing so, you can filter out all unnecessary columns.
+
+```{r}
+GenderInequalityDiff <- GenderInequalityIndexTidy %>%
+  mutate(inequality_diff = x2010-x2019) %>%
+  dplyr::select(country,
+                inequality_diff)
+```
+
+Now that you've processed your data, it's time to load in your shapefile
+
+Also, remember to check the CRS of the shapefile and simplify the shape for easier loading
+
+```{r}
+WorldShapeFile <- st_read(here::here("World_Countries_Generalized", "World_Countries__Generalized_.shp"))
+
+print(WorldShapeFile)
+
+WorldShapeFile_simp <- st_simplify(WorldShapeFile, dTolerance = 1000)
+
+plot(WorldShapeFile_simp)
+```
+
+Now it's time to join both data sets. no.dups meaning no duplicate and .keep_all meaning keep all data
+
+```{r}
+InequalityChangeMap <- WorldShapeFile_simp %>%
+  left_join (.,
+            GenderInequalityDiff,
+            by = c("COUNTRY"="country"))
+```
+
+Test if a merge works (you don't have to do this step) - this looks neater actually but some countries are missing. So use the former.
+
+```{r}
+InequalityChangeMap2 <- WorldShapeFile_simp %>%
+  merge(.,
+        GenderInequalityDiff,
+        by.x="COUNTRY",
+        by.y="country",
+        no.dups=TRUE) %>%
+  distinct(.,COUNTRY,
+           .keep_all = TRUE)
+```
+
+Plot the map now. Make sure you have tmap loaded
+
+```{r}
+tmap_mode("plot")
+qtm(InequalityChangeMap,
+    fill = "inequality_diff")
+```
+
+Making a nice map now
+
+```{r}
+tmap_mode("plot")
+tm_shape()+
+tm_rgb()+
+tm_shape(InequalityChangeMap)+
+tm_polygons("inequality_diff",
+            style="pretty",
+            palette="RdYlGn",
+            midpoint=0,
+            title="Value Difference",
+            alpha = 1) +
+  tm_layout(title = "Difference in Gender Inequality between 2010 and 2019",
+            legend.position = c("left", "bottom"))
+```
+
