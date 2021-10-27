@@ -29,7 +29,7 @@ Row 6 then becomes the header, and sep creates a new cell for each value
 
 na = ".." done to remove .. cells in the dataset
 
-!CAUTION! - CSV file country names have a space in front of it which you have to remove. Otherwise, the join will not work. Use the deplyr mutate function to remove all leading and trailling spaces with the str_trim function
+!CAUTION! - CSV file country names have a space in front of it which you have to remove. Otherwise, the join will not work. Use the deplyr mutate function to remove all leading and trailing spaces with the str_trim function
 
 ```{r}
 GenderInequalityIndex <- read.csv(here::here("Gender_Inequality_Index.csv"), 
@@ -97,9 +97,9 @@ qtm(InequalityChangeMap,
     fill = "inequality_diff")
 ```
 
-Making a nice map now
+Making a nice map now - seems to be an issue here.. I'll not load this code
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 tmap_mode("plot")
 tm_shape()+
 tm_rgb()+
@@ -113,4 +113,3 @@ tm_polygons("inequality_diff",
   tm_layout(title = "Difference in Gender Inequality between 2010 and 2019",
             legend.position = c("left", "bottom"))
 ```
-
